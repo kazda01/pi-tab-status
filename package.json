@@ -1,6 +1,6 @@
 {
   "name": "@kazda01/pi-tab-status",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Live Pi status and short AI-generated descriptions for terminal tabs, sessions, tmux, herdr, and zellij.",
   "type": "module",
   "license": "MIT",
