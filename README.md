@@ -41,7 +41,7 @@ Pi has many extensions for terminal titles, session naming, and status indicator
 
 ## Installation
 
-After the first npm release, install the settings extension first and then pi-tab-status:
+Install the settings extension first and then pi-tab-status:
 
 ```bash
 pi install npm:@juanibiapina/pi-extension-settings
@@ -58,19 +58,6 @@ Keep the packages in that order in Pi's `packages` array:
   ]
 }
 ```
-
-### Test the local checkout
-
-Until the first release, load the checkout directly:
-
-```bash
-cd /home/kazda/code/pi-tab-status
-pi --no-extensions \
-  -e ./node_modules/@juanibiapina/pi-extension-settings \
-  -e .
-```
-
-`--no-extensions` prevents another discovered title extension from conflicting during testing.
 
 ## Quick setup
 
