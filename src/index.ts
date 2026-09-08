@@ -105,6 +105,7 @@ export default function tabStatusExtension(pi: ExtensionAPI) {
   let running = false;
   let frameIndex = 0;
   let animationId: ReturnType<typeof setInterval> | undefined;
+  let lastTitle: string | undefined;
   let description: string | undefined;
   let descriptionPromptCount = 0;
   let promptCount = 0;
@@ -139,27 +140,34 @@ export default function tabStatusExtension(pi: ExtensionAPI) {
     loaded.config.titleMaxLength
   );
 
+  const updateTitle = (ctx: ExtensionContext, title: string): void => {
+    if (title === lastTitle) return;
+    lastTitle = title;
+    ctx.ui.setTitle(title);
+  };
+
   const setTitle = (ctx: ExtensionContext, next: StatusState): void => {
     state = next;
     clearAnimation();
     if (!ctx.hasUI) return;
     if (!loaded.config.enabled) {
-      ctx.ui.setTitle(safeTitle(loaded.config.shutdownTitle, loaded.config.titleMaxLength));
+      updateTitle(ctx, safeTitle(loaded.config.shutdownTitle, loaded.config.titleMaxLength));
       return;
     }
 
     const frames = loaderFrames(loaded.config.loader);
+    const frameTitles = frames.map((frame) => renderedTitle(frame));
     frameIndex = 0;
-    ctx.ui.setTitle(renderedTitle(frames[0] ?? ""));
-    if (next !== "working" || frames.length < 2) return;
+    updateTitle(ctx, frameTitles[0] ?? renderedTitle());
+    if (next !== "working" || new Set(frameTitles).size < 2) return;
 
     animationId = setInterval(() => {
       if (!running || state !== "working") {
         clearAnimation();
         return;
       }
-      frameIndex = (frameIndex + 1) % frames.length;
-      ctx.ui.setTitle(renderedTitle(frames[frameIndex] ?? ""));
+      frameIndex = (frameIndex + 1) % frameTitles.length;
+      updateTitle(ctx, frameTitles[frameIndex] ?? renderedTitle());
     }, loaded.config.loader.intervalMs);
   };
 
@@ -319,7 +327,7 @@ export default function tabStatusExtension(pi: ExtensionAPI) {
     running = false;
     pendingQuestions.clear();
     clearAnimation();
-    if (ctx.hasUI) ctx.ui.setTitle(safeTitle(loaded.config.shutdownTitle, loaded.config.titleMaxLength));
+    if (ctx.hasUI) updateTitle(ctx, safeTitle(loaded.config.shutdownTitle, loaded.config.titleMaxLength));
   });
 
   pi.registerCommand("tab-status", {

@@ -155,6 +155,9 @@ describe("extension runtime", () => {
     await h.emit("agent_start");
     await h.emit("agent_settled");
     expect(h.titles.at(-1)).toBe("π ✓ Package Tests");
+    const titleCallsAfterSettled = h.ui.setTitle.mock.calls.length;
+    vi.advanceTimersByTime(300);
+    expect(h.ui.setTitle).toHaveBeenCalledTimes(titleCallsAfterSettled);
 
     const callsAfterInitial = generateDescriptionMock.mock.calls.length;
     await h.emit("before_agent_start", { prompt: "second" });
@@ -168,6 +171,32 @@ describe("extension runtime", () => {
     await h.emit("session_info_changed", { name: "Manual" });
     await h.emit("session_shutdown", { reason: "quit" });
     expect(h.titles.at(-1)).toBe("π");
+    expect(vi.getTimerCount()).toBe(0);
+  });
+
+  it("does not animate or rewrite a title when loader frames do not change it", async () => {
+    vi.useFakeTimers();
+    const root = await mkdtemp(join(tmpdir(), "pi-tab-status-index-"));
+    vi.stubEnv("XDG_CONFIG_HOME", join(root, "xdg"));
+    getSettingMock.mockImplementation((_extension: string, id: string) =>
+      id === "titleTemplate" ? "Pi {{state}}" : undefined
+    );
+    const h = makeHarness(root);
+
+    await h.emit("session_start");
+    expect(h.titles).toEqual(["Pi idle"]);
+
+    await h.emit("before_agent_start", { prompt: "Build package" });
+    expect(h.titles.at(-1)).toBe("Pi working");
+    expect(vi.getTimerCount()).toBe(0);
+
+    const titleCallsWhileWorking = h.ui.setTitle.mock.calls.length;
+    await h.emit("agent_start");
+    vi.advanceTimersByTime(300);
+    expect(h.ui.setTitle).toHaveBeenCalledTimes(titleCallsWhileWorking);
+
+    await h.emit("agent_settled");
+    expect(h.titles.at(-1)).toBe("Pi done");
     expect(vi.getTimerCount()).toBe(0);
   });
 
